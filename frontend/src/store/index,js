@@ -1,0 +1,15 @@
+// src/store/index.js
+import { configureStore } from '@reduxjs/toolkit';
+import auth from './slices/authSlice';
+import chat from './slices/chatSlice';
+import lostfound from './slices/lostFoundSlice';
+
+export const store = configureStore({
+  reducer: {
+    auth,
+    chat,
+    lostfound,
+  }
+});
+
+export default store;
