@@ -11,75 +11,75 @@ require('dotenv').config();
 const app = express();
 const server = http.createServer(app);
 
-// Get local IP address
-function getLocalIP() {
-  const interfaces = os.networkInterfaces();
-  for (const name of Object.keys(interfaces)) {
-    for (const interface of interfaces[name]) {
-      const { address, family, internal } = interface;
-      if (family === 'IPv4' && !internal) {
-        return address;
-      }
-    }
-  }
-  return '127.0.0.1';
-}
+// // Get local IP address
+// function getLocalIP() {
+//   const interfaces = os.networkInterfaces();
+//   for (const name of Object.keys(interfaces)) {
+//     for (const interface of interfaces[name]) {
+//       const { address, family, internal } = interface;
+//       if (family === 'IPv4' && !internal) {
+//         return address;
+//       }
+//     }
+//   }
+//   return '127.0.0.1';
+// }
 
-const localIP = getLocalIP();
+// const localIP = getLocalIP();
 
-// ✅ PRODUCTION-READY CORS CONFIGURATION
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, Postman, or server-to-server)
-    if (!origin) return callback(null, true);
+// // ✅ PRODUCTION-READY CORS CONFIGURATION
+// const corsOptions = {
+//   origin: function (origin, callback) {
+//     // Allow requests with no origin (like mobile apps, Postman, or server-to-server)
+//     if (!origin) return callback(null, true);
     
-    // Define allowed origins for different environments
-    const allowedOrigins = [
-      // Local development
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      `http://${localIP}:3000`,
+//     // Define allowed origins for different environments
+//     const allowedOrigins = [
+//       // Local development
+//       'http://localhost:3000',
+//       'http://127.0.0.1:3000',
+//       `http://${localIP}:3000`,
       
-      // Vercel deployments (allow all .vercel.app domains)
-      /https:\/\/.*\.vercel\.app$/,
+//       // Vercel deployments (allow all .vercel.app domains)
+//       /https:\/\/.*\.vercel\.app$/,
       
-      // Local network (for mobile testing)
-      /http:\/\/192\.168\.\d+\.\d+:\d+/,
-      /http:\/\/10\.\d+\.\d+\.\d+:\d+/,
-      /http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+:\d+/
-    ];
+//       // Local network (for mobile testing)
+//       /http:\/\/192\.168\.\d+\.\d+:\d+/,
+//       /http:\/\/10\.\d+\.\d+\.\d+:\d+/,
+//       /http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+:\d+/
+//     ];
     
-    // Check if origin matches any allowed pattern
-    const isAllowed = allowedOrigins.some(pattern => {
-      if (typeof pattern === 'string') {
-        return origin === pattern;
-      } else if (pattern instanceof RegExp) {
-        return pattern.test(origin);
-      }
-      return false;
-    });
+//     // Check if origin matches any allowed pattern
+//     const isAllowed = allowedOrigins.some(pattern => {
+//       if (typeof pattern === 'string') {
+//         return origin === pattern;
+//       } else if (pattern instanceof RegExp) {
+//         return pattern.test(origin);
+//       }
+//       return false;
+//     });
     
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      console.log('❌ CORS blocked origin:', origin);
-      // In production, be more permissive to avoid blocking legitimate requests
-      if (process.env.NODE_ENV === 'production') {
-        callback(null, true); // Allow all origins in production
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true,
-  optionsSuccessStatus: 200
-};
+//     if (isAllowed) {
+//       callback(null, true);
+//     } else {
+//       console.log('❌ CORS blocked origin:', origin);
+//       // In production, be more permissive to avoid blocking legitimate requests
+//       if (process.env.NODE_ENV === 'production') {
+//         callback(null, true); // Allow all origins in production
+//       } else {
+//         callback(new Error('Not allowed by CORS'));
+//       }
+//     }
+//   },
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+//   credentials: true,
+//   optionsSuccessStatus: 200
+// };
 
 // Apply CORS middleware
-app.use(cors(corsOptions));
-
+app.use(cors());
+  
 // Handle preflight requests explicitly
 app.options('*', cors(corsOptions));
 
