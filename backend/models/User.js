@@ -2,79 +2,118 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-  email: {
-    type: String,
-    required: [true, 'Email is required'],
-    unique: true,
-    lowercase: true,
-    match: [/@charusat\.edu\.in$/, 'Please use your CHARUSAT university email']
-  },
   username: {
     type: String,
-    required: [true, 'Username is required'],
+    required: true,
     unique: true,
-    minlength: [3, 'Username must be at least 3 characters'],
-    maxlength: [20, 'Username cannot exceed 20 characters']
+    trim: true,
+    minlength: 3,
+    maxlength: 50
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true,
+    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
-    minlength: [6, 'Password must be at least 6 characters']
+    required: function() {
+      // Password is required only for non-Google users
+      return !this.isGoogleUser;
+    },
+    minlength: 6
   },
+  
+  // Google OAuth fields
+  isGoogleUser: {
+    type: Boolean,
+    default: false
+  },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true // Allows multiple null values
+  },
+  
+  // Verification status
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  
+  // User profile information
   profile: {
-    displayName: {
+    firstName: {
       type: String,
-      default: 'Anonymous Student'
+      trim: true,
+      default: ''
+    },
+    lastName: {
+      type: String,
+      trim: true,
+      default: ''
     },
     year: {
-      type: Number,
-      required: true,
-      min: 1,
-      max: 4
+      type: String,
+      default: 'Unknown'
     },
     branch: {
       type: String,
-      required: true,
-      enum: ['Computer Engineering', 'Information Technology', 'Electronics & Communication', 'Mechanical Engineering', 'Civil Engineering', 'Chemical Engineering', 'Other']
+      default: 'Unknown'
     },
-    avatar: {
+    profilePicture: {
       type: String,
       default: ''
     }
-  },
-  preferences: {
-    theme: {
-      type: String,
-      enum: ['light', 'dark'],
-      default: 'light'
-    }
-  },
-  role: {
-    type: String,
-    enum: ['student', 'moderator', 'admin'],
-    default: 'student'
   }
-}, { 
-  timestamps: true 
+}, {
+  timestamps: true
 });
 
-// Hash password before saving
+// Index for better performance
+userSchema.index({ email: 1 });
+userSchema.index({ username: 1 });
+userSchema.index({ googleId: 1 });
+
+// Hash password before saving (only for non-Google users)
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
+  // Only hash password if it's modified and user is not a Google user
+  if (!this.isModified('password') || this.isGoogleUser) {
+    return next();
+  }
+  
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
+  // Google users don't have real passwords
+  if (this.isGoogleUser) {
+    return false;
+  }
+  
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Hide password when converting to JSON
+// Transform JSON output to remove sensitive data
 userSchema.methods.toJSON = function() {
-  const user = this.toObject();
-  delete user.password;
-  return user;
+  const userObject = this.toObject();
+  delete userObject.password;
+  return userObject;
 };
+
+// Virtual for full name
+userSchema.virtual('fullName').get(function() {
+  return `${this.profile?.firstName || ''} ${this.profile?.lastName || ''}`.trim() || this.username;
+});
 
 module.exports = mongoose.model('User', userSchema);

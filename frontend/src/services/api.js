@@ -1,20 +1,22 @@
 import axios from 'axios';
 
+
 // Production-ready API URL configuration
 const getAPIBaseURL = () => {
   // Check if we're in production (deployed)
   if (process.env.NODE_ENV === 'production' || process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL || 'https://your-backend-url.up.railway.app';
+    // Use your working backend URL
+    return process.env.REACT_APP_API_URL || 'https://charusat-backend-37huqgz6x-rushal-valanis-projects.vercel.app';
   }
   
-  // Local development logic (your existing code)
+  // Local development logic
   const hostname = window.location.hostname;
   const port = '5000';
   
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return `http://localhost:${port}`; // For computer
+    return `http://localhost:${port}`;
   } else {
-    return `http://${hostname}:${port}`; // For mobile (uses same IP)
+    return `http://${hostname}:${port}`;
   }
 };
 
@@ -30,7 +32,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 15000, // Increased timeout for deployed servers
+  timeout: 30000,
 });
 
 // Add token to requests
@@ -49,7 +51,6 @@ api.interceptors.request.use(
   }
 );
 
-// Handle auth errors with better error messages
 api.interceptors.response.use(
   (response) => {
     console.log(`✅ API Response: ${response.status} ${response.config.url}`);
@@ -66,19 +67,6 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       window.location.href = '/login';
-    }
-    
-    // Enhanced error messages for deployment
-    if (error.code === 'NETWORK_ERROR' || error.code === 'ERR_NETWORK') {
-      if (process.env.NODE_ENV === 'production') {
-        error.userMessage = 'Cannot connect to server. Please check your internet connection.';
-      } else {
-        error.userMessage = 'Cannot connect to server. Make sure you\'re on the same WiFi network.';
-      }
-    } else if (error.code === 'ECONNABORTED') {
-      error.userMessage = 'Request timeout. Please check your internet connection.';
-    } else if (error.response?.status >= 500) {
-      error.userMessage = 'Server error. Please try again later.';
     }
     
     return Promise.reject(error);

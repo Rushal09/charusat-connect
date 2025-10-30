@@ -1,32 +1,127 @@
 const mongoose = require('mongoose');
 
-const lostItemSchema = new mongoose.Schema({
-  type: { type: String, enum: ['lost', 'found'], required: true },
-  title: { type: String, required: true, maxlength: 100 },
-  description: { type: String, maxlength: 1000, default: '' },
-  category: { 
-    type: String, 
-    enum: ['ID Card','Electronics','Books','Clothing','Accessories','Keys','Wallet','Documents','Other'],
+const lostFoundItemSchema = new mongoose.Schema({
+  // User who created the item (required)
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true
   },
-  location: { type: String, maxlength: 120, required: true },
-  date: { type: Date, required: true },
+  
+  // Basic item info
+  type: {
+    type: String,
+    required: true,
+    enum: ['lost', 'found'],
+    lowercase: true
+  },
+  
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+    minlength: 3,
+    maxlength: 100
+  },
+  
+  category: {
+    type: String,
+    required: true,
+    enum: ['ID Card', 'Electronics', 'Books', 'Clothing', 'Accessories', 'Keys', 'Wallet', 'Documents', 'Other']
+  },
+  
+  description: {
+    type: String,
+    required: true,
+    trim: true,
+    minlength: 10,
+    maxlength: 1000
+  },
+  
+  location: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  
+  date: {
+    type: Date,
+    required: true
+  },
+  
+  // Contact information (required fields)
+  contactName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  
+  contactEmail: {
+    type: String,
+    required: true,
+    trim: true,
+    lowercase: true
+  },
+  
+  phone: {
+    type: String,
+    trim: true
+  },
+  
+  // Images
   images: [{
-    url: { type: String, required: true },
-    filename: { type: String, required: true },
-    uploadedAt: { type: Date, default: Date.now }
+    filename: String,
+    url: String,
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
   }],
-  status: { type: String, enum: ['open','claimed','returned','resolved'], default: 'open' },
-  owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  contact: {
-    name: { type: String, required: true },
-    email: { type: String, required: true },
-    phone: { type: String, default: '' }
+  
+  // Status - fix enum values
+  status: {
+    type: String,
+    enum: ['open', 'claimed', 'resolved'], // Added 'open' as valid value
+    default: 'open'
+  },
+  
+  // Claims system
+  claims: [{
+    claimantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    claimantName: String,
+    claimantEmail: String,
+    message: String,
+    proofDescription: String,
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending'
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  
+  // Resolution info
+  resolvedWith: {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    timestamp: Date,
+    note: String
   }
-}, { timestamps: true });
+}, {
+  timestamps: true // Adds createdAt and updatedAt automatically
+});
 
-let LostItem;
-try { LostItem = mongoose.model('LostItem'); }
-catch { LostItem = mongoose.model('LostItem', lostItemSchema); }
+// Add indexes for better performance
+lostFoundItemSchema.index({ type: 1, status: 1 });
+lostFoundItemSchema.index({ category: 1 });
+lostFoundItemSchema.index({ createdAt: -1 });
 
-module.exports = LostItem;
+module.exports = mongoose.model('LostFoundItem', lostFoundItemSchema);
